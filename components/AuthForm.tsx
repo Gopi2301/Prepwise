@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Form } from "@/components/ui/form"
 import Image from "next/image";
 import Link from "next/link";
-import {toast} from "sonner";
+import {toast, Toaster} from "sonner";
 import FormField from "@/components/FormField";
 import {useRouter} from "next/navigation";
 import { sign } from "crypto"
+import { createUserWithEmailAndPassword } from "firebase/auth"
+import { auth } from "@/firebase/client"
+import { signUp } from "@/lib/actions/auth.action"
 
 const authFormSchema = (type: FormType) => {
     return z.object({
@@ -33,11 +36,23 @@ const AuthForm = ({type} :{type:FormType}) => {
         },
     })
 
-    // 2. Define a submit handler.
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    // 2. Define a submit handler.  
+   async function onSubmit(values: z.infer<typeof formSchema>) {
         console.log("type", type)
         try {
             if(type === 'sign-up'){
+                const {name, email, password} = values
+                const userCredentials = await createUserWithEmailAndPassword(auth, email, password);
+                const result = await signUp({
+                  uid: userCredentials.user.uid,
+                  name:name!,
+                  email,
+                  password
+                })
+                if(!result?.success ){
+                    toast.error(result?.message)
+                    return
+                }
                 toast.success('Account created successfully')
                 router.push('/sign-in')
                 }else{
